@@ -1,0 +1,16 @@
+check,result
+raw encounters,101766
+unique patients,71518
+duplicate encounter_id,0
+invalid gender rows (dropped),3
+weight missing % (column dropped),96.9
+payer_code missing % (set to Unknown),39.6
+medical_specialty missing % (set to Unknown),49.1
+race missing % (set to Unknown),2.2
+"expired / hospice discharges (kept in db, excluded from analysis)",2423
+patients with more than one encounter,16773
+patients with conflicting race/gender across visits,252
+clean encounters,101763
+encounters eligible for analysis (not expired/hospice),99340
+30-day readmission rate % (eligible),11.39
+HbA1c tested % of encounters,16.72

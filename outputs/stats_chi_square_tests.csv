@@ -1,0 +1,13 @@
+factor,chi2,dof,p_value,cramers_v,significant_bonferroni,highest_rate_group,highest_rate_pct,lowest_rate_group,lowest_rate_pct
+discharge_group,1082.9,7,1.493239927266716e-229,0.1244,True,Rehab / LTC,22.75,Home,6.95
+prior_inpatient,691.9,5,2.7736893732350564e-147,0.0994,True,5,35.61,0,8.13
+age_band,176.9,4,3.383410895362992e-37,0.0503,True,80+,10.62,<50,7.12
+diag1_group,75.3,9,1.4077826156692532e-12,0.0328,True,Missing,20.0,Respiratory,7.3
+diabetes_med,53.6,1,2.513508024131162e-13,0.0277,True,1,9.42,0,7.56
+insulin_status,49.7,3,9.378571740231335e-11,0.0266,True,Down,10.54,No,8.3
+race,18.2,5,0.0026522683331623594,0.0161,True,Caucasian,9.19,Other,6.88
+med_change,14.7,1,0.0001273279969851014,0.0145,True,1,9.44,0,8.6
+admission_type,11.0,4,0.026542011944549485,0.0125,False,Other,11.11,Elective,8.28
+admission_source,8.5,4,0.07567213862724731,0.011,False,Emergency Room,9.26,Other,6.67
+a1c_result,7.4,3,0.061392433535510424,0.0103,False,Not Tested,9.11,>8,8.16
+gender,0.3,1,0.5897549408532893,0.002,False,Female,9.04,Male,8.92

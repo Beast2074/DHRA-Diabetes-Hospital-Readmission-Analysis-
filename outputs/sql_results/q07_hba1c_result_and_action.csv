@@ -1,0 +1,5 @@
+hba1c_group,encounters,readmissions,readmit_rate_pct
+1. Not tested,57141,5206,9.11
+"2. High result, meds changed",5473,473,8.64
+"3. High result, no change",3632,283,7.79
+4. Normal result,3741,323,8.63

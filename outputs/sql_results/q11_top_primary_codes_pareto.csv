@@ -1,0 +1,16 @@
+code_rank,icd9_code,diag_group,encounters,readmissions,readmit_rate_pct,cumulative_pct_of_readmissions,total_codes
+1,428,Circulatory,6663,965,14.48,8.53,715
+2,414,Circulatory,6549,593,9.05,13.78,715
+3,410,Circulatory,3448,371,10.76,17.06,715
+4,434,Circulatory,1930,327,16.94,19.95,715
+5,486,Respiratory,3383,314,9.28,22.73,715
+6,786,Respiratory,4015,290,7.22,25.29,715
+7,491,Respiratory,2240,287,12.81,27.83,715
+8,996,Injury,1937,264,13.63,30.16,715
+9,276,Other,1839,255,13.87,32.42,715
+10,427,Circulatory,2720,251,9.23,34.64,715
+11,250.6,Diabetes,1177,219,18.61,36.57,715
+12,715,Musculoskeletal,2147,215,10.01,38.47,715
+13,584,Genitourinary,1450,201,13.86,40.25,715
+14,780,Other,2004,190,9.48,41.93,715
+15,38,Other,1497,185,12.36,43.57,715

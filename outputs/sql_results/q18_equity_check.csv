@@ -1,0 +1,11 @@
+race,gender,encounters,readmit_rate_pct
+AfricanAmerican,Female,11432,11.32
+AfricanAmerican,Male,7296,11.71
+Caucasian,Female,38723,11.7
+Caucasian,Male,35445,11.32
+Hispanic,Female,1086,9.48
+Hispanic,Male,957,11.91
+Other,Female,737,10.18
+Other,Male,745,8.72
+Unknown,Female,1167,8.65
+Unknown,Male,1153,8.93

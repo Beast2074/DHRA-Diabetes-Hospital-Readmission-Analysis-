@@ -1,0 +1,5 @@
+insulin_status,encounters,readmit_rate_pct
+Down,11908,14.22
+Up,10987,13.33
+Steady,30069,11.37
+Not prescribed,46376,10.21

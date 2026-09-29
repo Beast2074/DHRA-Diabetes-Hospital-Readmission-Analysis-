@@ -1,0 +1,9 @@
+discharge_group,encounters,readmissions,readmit_rate_pct,excess_readmissions_vs_home,excess_cost_usd
+Rehab / LTC,2404,582,24.21,358,5448233
+Other Facility,1328,298,22.44,174,2652388
+Other Hospital,2128,342,16.07,144,2189797
+SNF / Nursing,14880,2185,14.68,801,12168269
+Left AMA,623,90,14.45,32,487684
+Home Health,13010,1653,12.71,444,6743343
+Other / Unknown,4735,562,11.87,122,1849680
+Home,60232,5602,9.3,0,0

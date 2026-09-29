@@ -1,0 +1,90 @@
+{
+  "model": {
+    "train_stays": 79567,
+    "test_stays": 19773,
+    "test_base_rate_pct": 11.35,
+    "best_params": {
+      "min_samples_leaf": 200,
+      "max_leaf_nodes": 31,
+      "max_iter": 500,
+      "max_features": 0.5,
+      "learning_rate": 0.01,
+      "l2_regularization": 0.0
+    },
+    "hgb_cv_auc": 0.6786,
+    "hgb_test_auc": 0.689,
+    "hgb_auc_ci": [
+      0.6777,
+      0.7019
+    ],
+    "lr_test_auc": 0.6704,
+    "lace_test_auc": 0.5716,
+    "auc_gain_vs_lace_ci": [
+      0.103,
+      0.1318
+    ],
+    "hgb_recall_top20_pct": 40.78,
+    "lace_recall_top20_pct": 27.45,
+    "hgb_precision_top20_pct": 23.14,
+    "hgb_lift_top10": 2.55,
+    "hgb_top_decile_rate_pct": 28.92,
+    "lace_rule_ge10": {
+      "flagged_pct": 10.56,
+      "precision_pct": 17.14,
+      "recall_pct": 15.95
+    },
+    "oof_auc": 0.6813,
+    "stays_scored_in_mysql": 99340,
+    "top_features": [
+      "discharge_group",
+      "number_inpatient",
+      "prior_stays_in_network",
+      "charlson_index",
+      "diag1_group"
+    ],
+    "fairness_auc_range": [
+      0.6514,
+      0.7968
+    ]
+  },
+  "cost": {
+    "assumptions": {
+      "readmission_cost": 15200,
+      "intervention_cost": 500,
+      "risk_reduction": 0.2
+    },
+    "break_even_risk_pct": 16.45,
+    "optimal_pct_targeted": 15.0,
+    "optimal_net_savings_per_10k": 412300.0,
+    "optimal_prevented_per_10k": 76.5,
+    "optimal_roi_pct": 55.0,
+    "top20_net_savings_per_10k": 406666.0,
+    "top20_prevented_per_10k": 92.6,
+    "top20_roi_pct": 40.7,
+    "lace_top20_net_savings_per_10k": -53032.0,
+    "enrol_everyone_net_per_10k": -1549962.0,
+    "profitable_scenarios": 19,
+    "total_scenarios": 20
+  },
+  "sql": {
+    "stays": 99340,
+    "patients": 69987,
+    "readmissions": 11314,
+    "readmit_rate_pct": 11.39,
+    "readmission_cost_musd": 172.0,
+    "hba1c_tested_pct": 16.95,
+    "rate_0_prior": 8.59,
+    "rate_5plus_prior": 37.13,
+    "rr_5plus_prior": 4.32,
+    "repeat_pct_patients": 8.75,
+    "repeat_pct_readmissions": 52.32,
+    "rehab_rate": 24.21,
+    "home_rate": 9.3,
+    "snf_excess": 801,
+    "hba1c_tested_rate": 7.23,
+    "hba1c_untested_rate": 10.17,
+    "hba1c_p": 0.0002028079855715,
+    "or_prior_inpatient": 1.46,
+    "or_rehab": 3.69
+  }
+}

@@ -1,0 +1,2 @@
+group,n_not_tested,rate_not_tested_pct,n_tested,rate_tested_pct,z_stat,p_value
+primary diagnosis = diabetes (first stays),3687,10.17,2061,7.23,3.715,0.0002028079855715334

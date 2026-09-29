@@ -1,0 +1,10 @@
+primary_diagnosis,encounters,readmissions,readmit_rate_pct,readmission_cost_usd,cost_rank
+Circulatory,29680,3469,11.69,52728800,1
+Other,17793,2079,11.68,31600800,2
+Respiratory,13934,1402,10.06,21310400,3
+Diabetes,8661,1135,13.1,17252000,4
+Digestive,9333,1010,10.82,15352000,5
+Injury,6851,850,12.41,12920000,6
+Genitourinary,5002,552,11.04,8390400,7
+Musculoskeletal,4935,471,9.54,7159200,8
+Neoplasms,3131,341,10.89,5183200,9

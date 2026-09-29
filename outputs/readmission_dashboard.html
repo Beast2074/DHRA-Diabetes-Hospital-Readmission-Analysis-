@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Readmission Risk Dashboard</title>
+<style>
+  :root { --bg:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --line:#e1e0d9; --accent:#1c5cab; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:24px; margin:0 0 4px; } .lead { color:var(--ink2); margin:0 0 20px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
+  .tile { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .label { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .value { font-size:26px; font-weight:650; margin:4px 0; } .sub { font-size:12px; color:var(--ink2); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-bottom:16px; overflow-x:auto; }
+  /* auto-fill (not auto-fit) so the first chart gets its final width before plotly draws it */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(440px,1fr)); gap:16px; }
+  @media (max-width:520px) { .grid { grid-template-columns:1fr; } }
+  ul { padding-left:20px; } li { margin:6px 0; line-height:1.45; }
+  details { margin-top:6px; font-size:13px; color:var(--ink2); } summary { cursor:pointer; color:var(--accent); }
+  .tbl { border-collapse:collapse; font-size:12px; margin-top:8px; font-variant-numeric:tabular-nums; }
+  .tbl th, .tbl td { padding:4px 8px; border-bottom:1px solid var(--line); text-align:right; }
+  .tbl th:first-child, .tbl td:first-child { text-align:left; }
+  footer { color:var(--muted); font-size:12px; margin-top:24px; }
+</style></head>
+<body><main>
+<h1>Diabetes 30-Day Readmission Risk</h1>
+<p class="lead">130 US hospitals, 1999-2008 | MySQL + Python pipeline | model scored on patients it never saw</p>
+<div class="tiles"><div class='tile'><div class='label'>Readmission rate</div><div class='value'>11.39%</div><div class='sub'>11,314 of 99,340 stays</div></div><div class='tile'><div class='label'>Cost of readmissions</div><div class='value'>$172M</div><div class='sub'>at $15,200 each</div></div><div class='tile'><div class='label'>HbA1c tested</div><div class='value'>16.95%</div><div class='sub'>of diabetic inpatient stays</div></div><div class='tile'><div class='label'>Model AUC</div><div class='value'>0.689</div><div class='sub'>vs LACE 0.572</div></div><div class='tile'><div class='label'>Caught in top 20%</div><div class='value'>40.78%</div><div class='sub'>vs 27.45% with LACE</div></div><div class='tile'><div class='label'>Net savings</div><div class='value'>$412K</div><div class='sub'>per 10,000 discharges</div></div></div>
+<section class="card"><h2 style="font-size:17px;margin:6px 0">Key findings</h2><ul><li>11.39% of eligible diabetic stays (11,314) were readmitted within 30 days, about $172M at the AHRQ average cost.</li><li>Readmission risk climbs with every prior inpatient stay: 8.59% with none vs 37.13% with 5+ (4.32x). Adjusted OR per extra stay = 1.46.</li><li>8.75% of patients (3+ stays) account for 52.32% of all readmissions.</li><li>Discharge to rehab / long-term care has a 24.21% readmission rate vs 9.3% for home (adjusted OR 3.69). SNF discharges alone create ~801 excess readmissions.</li><li>Only 16.95% of stays had an HbA1c test. For diabetes-primary first stays, tested patients were readmitted 7.23% vs 10.17% untested (p = 0.0002).</li><li>The standard LACE index only reaches AUC 0.572; the gradient boosting model reaches 0.689 on unseen patients (gain 95% CI 0.103 to 0.132).</li><li>Calling the top 20% of discharges catches 40.78% of readmissions with the model vs 27.45% with LACE - about 49% more with the same staff.</li><li>At $500/patient and a 20% effect, the break-even risk is 16.45%. Enrolling the model&#x27;s top 15% nets $412,300 per 10,000 discharges; enrolling everyone loses $1,549,962.</li><li>The program stays profitable in 19 of 20 cost / effect scenarios tested.</li></ul></section>
+<div class="grid"><section class='card'><div style="height:380px; width:100%;">                        <script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-4.1.1.min.js" integrity="sha256-O24V1F27f8pb0glCkelh3cVHLNiHAJ5gCaVtq2aNch8=" crossorigin="anonymous"></script>                <div id="70505c3f-94cd-4db7-a7e7-8931c61db095" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("70505c3f-94cd-4db7-a7e7-8931c61db095")) {                    Plotly.newPlot(                        "70505c3f-94cd-4db7-a7e7-8931c61db095",                        [{"customdata":{"dtype":"i4","bdata":"wgIBAChKAACEHAAAxwwAACYGAACxBwAA"},"hovertemplate":"%{x} prior stays\u003cbr\u003e%{y:.1f}% readmitted\u003cbr\u003e%{customdata:,} stays\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#2a78d6"},"x":["0","1","2","3","4","5+"],"y":{"dtype":"f8","bdata":"rkfhehQuIUAAAAAAAIAqQK5H4XoU7jFASOF6FK4HNUCkcD0K1yM4QHE9CtejkEJA"},"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05}}},"xaxis":{"type":"category","title":{"text":"Inpatient stays in past year"},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"title":{"font":{"size":15,"color":"#0b0b0b"},"text":"Readmission rate by prior inpatient stays","x":0},"margin":{"l":60,"r":20,"t":60,"b":50},"font":{"family":"system-ui, -apple-system, Segoe UI, sans-serif","color":"#52514e","size":12},"yaxis":{"title":{"text":"Readmission rate (%)"},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"legend":{"orientation":"h","y":-0.2},"hoverlabel":{"bgcolor":"white"},"paper_bgcolor":"#fcfcfb","plot_bgcolor":"#fcfcfb","height":380},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div><details><summary>Show data table</summary><table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>prior_inpatient_visits</th>
+      <th>encounters</th>
+      <th>readmissions</th>
+      <th>readmit_rate_pct</th>
+      <th>relative_risk_vs_zero</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>66242</td>
+      <td>5690</td>
+      <td>8.59</td>
+      <td>1.00</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>18984</td>
+      <td>2516</td>
+      <td>13.25</td>
+      <td>1.54</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>7300</td>
+      <td>1309</td>
+      <td>17.93</td>
+      <td>2.09</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>3271</td>
+      <td>688</td>
+      <td>21.03</td>
+      <td>2.45</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>1574</td>
+      <td>380</td>
+      <td>24.14</td>
+      <td>2.81</td>
+    </tr>
+    <tr>
+      <td>5+</td>
+      <td>1969</td>
+      <td>731</td>
+      <td>37.13</td>
+      <td>4.32</td>
+    </tr>
+  </tbody>
+</table></details></section><section class='card'><div style="height:380px; width:100%;">                            <div id="ef14cff6-afab-4d8e-89ee-6aaeaf5f200d" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("ef14cff6-afab-4d8e-89ee-6aaeaf5f200d")) {                    Plotly.newPlot(                        "ef14cff6-afab-4d8e-89ee-6aaeaf5f200d",                        [{"customdata":{"dtype":"i4","bdata":"SOsAAAAAAAB\u002fEgAAUDkcANIyAAAv5WYAbwIAAARxBwAgOgAATay5AFAIAADlaSEAMAUAAOR4KABkCQAAKSJTAA==","shape":"8, 2"},"hovertemplate":"%{y}\u003cbr\u003e%{x:.1f}% readmitted\u003cbr\u003e%{customdata[0]:,} stays\u003cbr\u003eexcess cost vs home: $%{customdata[1]:,}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":["#d6d5ce","#2a78d6","#2a78d6","#2a78d6","#2a78d6","#2a78d6","#2a78d6","#2a78d6"]},"orientation":"h","x":{"dtype":"f8","bdata":"mpmZmZmZIkA9CtejcL0nQOxRuB6FaylAZmZmZmbmLEBcj8L1KFwtQFK4HoXrETBAcT0K16NwNkD2KFyPwjU4QA=="},"y":["Home","Other \u002f Unknown","Home Health","Left AMA","SNF \u002f Nursing","Other Hospital","Other Facility","Rehab \u002f LTC"],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05}}},"title":{"font":{"size":15,"color":"#0b0b0b"},"text":"Readmission rate by discharge destination","x":0},"margin":{"l":60,"r":20,"t":60,"b":50},"font":{"family":"system-ui, -apple-system, Segoe UI, sans-serif","color":"#52514e","size":12},"xaxis":{"title":{"text":"Readmission rate (%)"},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"yaxis":{"title":{"text":""},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"legend":{"orientation":"h","y":-0.2},"hoverlabel":{"bgcolor":"white"},"paper_bgcolor":"#fcfcfb","plot_bgcolor":"#fcfcfb","height":380},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div><details><summary>Show data table</summary><table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>discharge_group</th>
+      <th>encounters</th>
+      <th>readmissions</th>
+      <th>readmit_rate_pct</th>
+      <th>excess_readmissions_vs_home</th>
+      <th>excess_cost_usd</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Home</td>
+      <td>60232</td>
+      <td>5602</td>
+      <td>9.30</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>Other / Unknown</td>
+      <td>4735</td>
+      <td>562</td>
+      <td>11.87</td>
+      <td>122</td>
+      <td>1849680</td>
+    </tr>
+    <tr>
+      <td>Home Health</td>
+      <td>13010</td>
+      <td>1653</td>
+      <td>12.71</td>
+      <td>444</td>
+      <td>6743343</td>
+    </tr>
+    <tr>
+      <td>Left AMA</td>
+      <td>623</td>
+      <td>90</td>
+      <td>14.45</td>
+      <td>32</td>
+      <td>487684</td>
+    </tr>
+    <tr>
+      <td>SNF / Nursing</td>
+      <td>14880</td>
+      <td>2185</td>
+      <td>14.68</td>
+      <td>801</td>
+      <td>12168269</td>
+    </tr>
+    <tr>
+      <td>Other Hospital</td>
+      <td>2128</td>
+      <td>342</td>
+      <td>16.07</td>
+      <td>144</td>
+      <td>2189797</td>
+    </tr>
+    <tr>
+      <td>Other Facility</td>
+      <td>1328</td>
+      <td>298</td>
+      <td>22.44</td>
+      <td>174</td>
+      <td>2652388</td>
+    </tr>
+    <tr>
+      <td>Rehab / LTC</td>
+      <td>2404</td>
+      <td>582</td>
+      <td>24.21</td>
+      <td>358</td>
+      <td>5448233</td>
+    </tr>
+  </tbody>
+</table></details></section><section class='card'><div style="height:380px; width:100%;">                            <div id="536dd99e-402f-4039-8ddd-6f7bffa8e990" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("536dd99e-402f-4039-8ddd-6f7bffa8e990")) {                    Plotly.newPlot(                        "536dd99e-402f-4039-8ddd-6f7bffa8e990",                        [{"customdata":{"dtype":"f8","bdata":"ZmZmZmZmBEA9CtejcH05QHsUrkfhevg\u002fpHA9CtdjREDD9Shcj8L1PxSuR+F6NEtArkfhehSu7z8zMzMzMxNQQIXrUbgehes\u002fzczMzMw8UkBSuB6F61HoP1K4HoXrIVRAKVyPwvUo5D9mZmZmZrZVQI\u002fC9Shcj+I\u002fmpmZmZkpV0DhehSuR+HaP\u002fYoXI\u002fCNVhAexSuR+F61D8AAAAAAABZQA==","shape":"10, 2"},"hovertemplate":"decile %{x}\u003cbr\u003e%{y:.1f}% readmitted\u003cbr\u003elift %{customdata[0]}x\u003cbr\u003ecumulative capture %{customdata[1]}%\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":["#2a78d6","#2a78d6","#d6d5ce","#d6d5ce","#d6d5ce","#d6d5ce","#d6d5ce","#d6d5ce","#d6d5ce","#d6d5ce"]},"x":{"dtype":"i1","bdata":"AQIDBAUGBwgJCg=="},"y":{"dtype":"f8","bdata":"7FG4HoXrPECamZmZmVkxQPYoXI\u002fC9S5A9ihcj8J1JkAfhetRuJ4jQDMzMzMzMyFAuB6F61G4HEBSuB6F61EaQAAAAAAAABNAuB6F61G4DEA="},"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05}}},"xaxis":{"dtick":1,"title":{"text":"Risk decile"},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"title":{"font":{"size":15,"color":"#0b0b0b"},"text":"Actual readmission rate by model risk decile (1 = highest)","x":0},"margin":{"l":60,"r":20,"t":60,"b":50},"font":{"family":"system-ui, -apple-system, Segoe UI, sans-serif","color":"#52514e","size":12},"yaxis":{"title":{"text":"Readmission rate (%)"},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"legend":{"orientation":"h","y":-0.2},"hoverlabel":{"bgcolor":"white"},"paper_bgcolor":"#fcfcfb","plot_bgcolor":"#fcfcfb","height":380},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div><details><summary>Show data table</summary><table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>decile</th>
+      <th>stays</th>
+      <th>readmissions</th>
+      <th>readmit_rate_pct</th>
+      <th>avg_predicted_pct</th>
+      <th>lift</th>
+      <th>cum_pct_of_readmissions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>1978</td>
+      <td>572</td>
+      <td>28.92</td>
+      <td>26.09</td>
+      <td>2.55</td>
+      <td>25.49</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>1977</td>
+      <td>343</td>
+      <td>17.35</td>
+      <td>17.52</td>
+      <td>1.53</td>
+      <td>40.78</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>1977</td>
+      <td>306</td>
+      <td>15.48</td>
+      <td>14.28</td>
+      <td>1.36</td>
+      <td>54.41</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>1977</td>
+      <td>222</td>
+      <td>11.23</td>
+      <td>12.01</td>
+      <td>0.99</td>
+      <td>64.30</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>1978</td>
+      <td>194</td>
+      <td>9.81</td>
+      <td>10.36</td>
+      <td>0.86</td>
+      <td>72.95</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>1977</td>
+      <td>170</td>
+      <td>8.60</td>
+      <td>8.97</td>
+      <td>0.76</td>
+      <td>80.53</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>1977</td>
+      <td>142</td>
+      <td>7.18</td>
+      <td>7.72</td>
+      <td>0.63</td>
+      <td>86.85</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>1977</td>
+      <td>130</td>
+      <td>6.58</td>
+      <td>6.65</td>
+      <td>0.58</td>
+      <td>92.65</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>1977</td>
+      <td>94</td>
+      <td>4.75</td>
+      <td>5.60</td>
+      <td>0.42</td>
+      <td>96.84</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>1978</td>
+      <td>71</td>
+      <td>3.59</td>
+      <td>4.24</td>
+      <td>0.32</td>
+      <td>100.00</td>
+    </tr>
+  </tbody>
+</table></details></section><section class='card'><div style="height:380px; width:100%;">                            <div id="e7effb44-3fdf-4063-8d5e-066a84b78f1b" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("e7effb44-3fdf-4063-8d5e-066a84b78f1b")) {                    Plotly.newPlot(                        "e7effb44-3fdf-4063-8d5e-066a84b78f1b",                        [{"hovertemplate":"Gradient boosting\u003cbr\u003eenrol top %{x}%\u003cbr\u003enet $%{y:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#2a78d6","width":2},"mode":"lines","name":"Gradient boosting","x":{"dtype":"i1","bdata":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4\u002fQEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZA=="},"y":{"dtype":"f8","bdata":"FK5H4eKv+UB7FK5He94DQYXrUbjWJApBH4XrUUgSDUGuR+F6BnQQQSlcj8LoXhJB4XoUrn8RE0F7FK5HBLATQc3MzMzgghVB4XoUrrElF0EzMzMzVAgYQZqZmZnevhhB7FG4HmQpGUHNzMzMxgMZQWZmZmYuKhlB7FG4HpEEGUEAAAAA7sYYQVK4HoVWuRhBUrgehbKvGEE9CtejJtIYQYXrUbia9BhBcT0K19QmGEEK16NwPE0YQexRuB6fJxhBCtejcCqqGEE9CtejgIgYQR+F61HjYhhBcT0K1y7dF0Fcj8L1hYcXQbgehevEBRdBpHA9CuK\u002fFUFcj8L1BJIUQQrXo3BthBRB16NwPXgqE0H2KFyPybwSQaRwPQrbRhFB9ihcjybBEEHsUbgekY4PQeF6FK6\u002f0gxB7FG4HhGnCkE9CtejJvMHQeF6FK5JBwVB7FG4HpvbAkFI4XoU+N8AQVyPwvXsl\u002ftA4XoUrhtg9UD2KFyPvgjxQHsUrkfxIupA9ihcj9KT4UBxPQrX00nQQFK4HoXrn6TA4XoUrme03MB7FK5HkYjlwFK4HoVfHPLApHA9Cusz98A9CtejqDv8wClcj8LfyQHBUrgehaVVBMFcj8L16vEIwfYoXI+yFQvBUrgehY8BDsF7FK5HtnYQweF6FK7fqBLBAAAAAPGuFMFI4XoUCM0WwSlcj8LwKhjBZmZmZvfMGcFI4XoU\u002faIbwTMzMzP3SB3B4XoUruW+HsHXo3A9cyQgwQAAAIBq3yDBPQrXo2SmIcEAAAAAds0iwTMzMzN8qiPBcT0KV3ZxJMEAAACAcDglwQAAAIB8LSbBj8L1KIUwJ8GamZkZoocowY\u002fC9SifWinBj8L1KKtPKsFmZmbmzb4rwcP1KFzc2SzBmpmZmfAMLsG4HoVrAhovwRSuR+GJIDDBXI\u002fCNQ6iMMHD9SgclygxwRSuR+EcsDHBw\u002fUoHKQ9MsFI4XpUK8sywT0K1yO3XTPBXI\u002fCdTvfM8GkcD0Kx340wcP1KJxSHjXB7FG43t+2NcE9CtfjbFw2wVyPwnX4+zbBH4XrEYqmN8E="},"type":"scatter"},{"hovertemplate":"LACE index\u003cbr\u003eenrol top %{x}%\u003cbr\u003enet $%{y:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#eb6834","width":2},"mode":"lines","name":"LACE index","x":{"dtype":"i1","bdata":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4\u002fQEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZA=="},"y":{"dtype":"f8","bdata":"7FG4HlUs10AfhetREOvhQIXrUbju+99Aj8L1KASz6EDsUbgepcbpQPYoXI\u002fS2ORAhetRuBZs5EA9CtejwDvfQMP1KFyvceFAuB6F6yHF4UD2KFyPcqzQQArXo3B9IcRAPQrXo3BXm0AUrkfhWkzAwOF6FK73QtPAj8L1KMyc1cCF61G4Tj3kwOF6FK5nKubAFK5H4fp47MDsUbge\u002feTpwD0K16PE6fDAw\u002fUoXAvA8MApXI\u002fCPYfzwKRwPQqb3vfA9ihcjz41+cDD9ShcK9z6wKRwPQpDE\u002f7ArkfhekQFAcE9CtejxHACwbgehesj5ALBFK5H4cbfBMHXo3A9mJsHwRSuR+GAtwrBrkfheg7rC8GkcD0KSTYMwUjhehTsMQ7BCtejcIP9D8EpXI\u002fCvHARwT0K16OCPhLB7FG4HlQ8E8EpXI\u002fCWt4UwQrXo3BDPBbBH4XrUeyRFsHXo3A9sl8XwQrXo3CnuRjB7FG4HnOfGcGkcD0KVuUawVK4HoUKaxvBKVyPwv\u002fEHMFxPQrXogIdwexRuB56GB7BKVyPwmNCH8E9CtejDJgfwVyPwnUAkyDBuB6Fa+P5IMGF61E42I4hwcP1KNzDGSLB7FG4nqyYIsHD9ShclRcjwfYoXI9+fCPBuB6F63IrJMHD9SjccgolwXsUrsdkkyXB7FG4nkoGJsEpXI9CNpEmwexRuJ4NyCbBhetROAh1J8EpXI\u002fC9gsowVK4HgXuxijBXI\u002fCdd9pKcF7FK7H4joqwexRuB7X6SrBj8L1qMWAK8HsUbiexV8swexRuB7DGC3BexSux66jLcFSuB4Fpl4uwVK4HgWyUy\u002fBSOF6lKDqL8HD9ShczVgwwa5H4bpBmDDB16NwfcD0MMH2KFxPNjoxwdejcH2wkTHBj8L1KBytMcH2KFzPnRUywQrXo3AZczLBKVyPgpbWMsGF61H4HVczwQrXo7CWqDPBXI\u002fC9Q30M8E9CtcjiEs0wQrXo7AMwDTBuB6Fq4wvNcE9CtdjBYE1wY\u002fC9eiD6jXBH4XrkQVTNsHXo3D9hsg2wbgehWsIPjfBH4XrEYqmN8E="},"type":"scatter"},{"hovertemplate":"No targeting (random)\u003cbr\u003eenrol top %{x}%\u003cbr\u003enet $%{y:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#c3c2b7","width":2},"mode":"lines","name":"No targeting (random)","x":{"dtype":"i1","bdata":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4\u002fQEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZA=="},"y":{"dtype":"f8","bdata":"KVyPwnW5zMDNzMzMdF3hwKRwPQovDOrAuB6F672t8cBmZmZmvoT0wFK4HoUb3PjAAAAAAJCT\u002fcAzMzMzmx0BwSlcj8IPWQLBmpmZmWEEA8H2KFyPyg8EwVyPwvV60wXBmpmZme8OB8H2KFyPWBoIwY\u002fC9ShaLgvBAAAAACC6DcHD9Shct4UPwSlcj8K48BDBMzMzM4u6EcEUrkfhVqASwc3MzMw55hPBSOF6FBH8FMF7FK5H6d0VwZqZmZnA8xbB4XoUroCpF8EUrkfhdQMZwQAAAAA2uRnB4XoUrh4XG8H2KFyP5OQbwc3MzMy8xhzBexSuR47EHcFmZmZma\u002fIeweF6FK4IGB\u002fBcT0KV\u002fMIIMGamZkZ3IcgwT0K16PKHiHBFK5H4aRhIcGamZmZnAIiwaRwPQqOpSLBrkfh+nAMI8HNzMxMdN0jwT0K1yNaUCTBmpmZGT23JMGkcD0KPZYlwT0K16MayyXBAAAAAPIBJsEK16Nw46Qmwa5H4XrD\u002fybBAAAAAKRAJ8E9CtcjgY8nwXsUrkde3ifBAAAAgEdDKMHXo3C9IYYowRSuR2ENESnBcT0K1\u002f6zKcEK16Pw6iQqwXsUrsfQlyrBcT0K17DyKsHhehSulmUrwQAAAICL+ivBCtej8F8lLMFI4XoUPXQswZqZmZkdtSzBcT0KVwY0LcHhehSu3WotwT0K1yPPDS7BcT0K18auLsGuR+F6sjkvwXE9Ctem6C\u002fBcT0K19RpMME9CtfjSqIwwexRuF681TDBPQrXYywDMcG4HoWro04xwexRuF4VdTHBcT0Kl3+KMcG4HoVr9c8xwexRuF5uFDLB16Nw\u002felxMsFSuB5FYb0ywXE9ClfeIDPB16NwvVhrM8HsUbgezaozwXE9CtdF\u002fDPBhetRuKv\u002fM8G4HoWrJEQ0wQrXo\u002fCbjzTBH4XrkRftNMHsUbiejSU1wT0K1+MEcTXBUrgeRXmwNcFxPQpX9hM2wWZmZmZsTDbBH4XrUd+FNsFxPQoXSJU2wYXrUXi81DbBH4XrETEHN8FxPQoXoTQ3wR+F6xEhpDfBH4XrEYqmN8E="},"type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05}}},"hovermode":"x unified","title":{"font":{"size":15,"color":"#0b0b0b"},"text":"Net savings per 10,000 discharges vs % enrolled","x":0},"margin":{"l":60,"r":20,"t":60,"b":50},"font":{"family":"system-ui, -apple-system, Segoe UI, sans-serif","color":"#52514e","size":12},"xaxis":{"title":{"text":"% of discharges enrolled"},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"yaxis":{"title":{"text":"Net savings ($)"},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"legend":{"orientation":"h","y":-0.2},"hoverlabel":{"bgcolor":"white"},"paper_bgcolor":"#fcfcfb","plot_bgcolor":"#fcfcfb","height":380},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div><details><summary>Show data table</summary><table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>targeted</th>
+      <th>readmissions_reached</th>
+      <th>readmissions_prevented</th>
+      <th>gross_savings</th>
+      <th>program_cost</th>
+      <th>net_savings</th>
+      <th>roi_pct</th>
+      <th>pct_targeted</th>
+      <th>strategy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>500.18</td>
+      <td>170.94</td>
+      <td>34.19</td>
+      <td>519658.12</td>
+      <td>250088.50</td>
+      <td>269569.62</td>
+      <td>107.79</td>
+      <td>5</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>1000.35</td>
+      <td>289.28</td>
+      <td>57.86</td>
+      <td>879421.43</td>
+      <td>500177.01</td>
+      <td>379244.42</td>
+      <td>75.82</td>
+      <td>10</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>1500.03</td>
+      <td>382.34</td>
+      <td>76.47</td>
+      <td>1162312.24</td>
+      <td>750012.64</td>
+      <td>412299.60</td>
+      <td>54.97</td>
+      <td>15</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>2000.20</td>
+      <td>462.75</td>
+      <td>92.55</td>
+      <td>1406766.80</td>
+      <td>1000101.15</td>
+      <td>406665.66</td>
+      <td>40.66</td>
+      <td>20</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>2500.38</td>
+      <td>544.18</td>
+      <td>108.84</td>
+      <td>1654296.26</td>
+      <td>1250189.65</td>
+      <td>404106.61</td>
+      <td>32.32</td>
+      <td>25</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>3000.05</td>
+      <td>617.51</td>
+      <td>123.50</td>
+      <td>1877226.52</td>
+      <td>1500025.29</td>
+      <td>377201.23</td>
+      <td>25.15</td>
+      <td>30</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>3500.23</td>
+      <td>676.68</td>
+      <td>135.34</td>
+      <td>2057108.18</td>
+      <td>1750113.79</td>
+      <td>306994.39</td>
+      <td>17.54</td>
+      <td>35</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>4000.40</td>
+      <td>729.78</td>
+      <td>145.96</td>
+      <td>2218540.43</td>
+      <td>2000202.30</td>
+      <td>218338.14</td>
+      <td>10.92</td>
+      <td>40</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>4500.08</td>
+      <td>777.32</td>
+      <td>155.46</td>
+      <td>2363060.74</td>
+      <td>2250037.93</td>
+      <td>113022.81</td>
+      <td>5.02</td>
+      <td>45</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>5000.25</td>
+      <td>827.90</td>
+      <td>165.58</td>
+      <td>2516805.75</td>
+      <td>2500126.44</td>
+      <td>16679.31</td>
+      <td>0.67</td>
+      <td>50</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>5500.43</td>
+      <td>873.41</td>
+      <td>174.68</td>
+      <td>2655176.25</td>
+      <td>2750214.94</td>
+      <td>-95038.69</td>
+      <td>-3.46</td>
+      <td>55</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>6000.10</td>
+      <td>913.87</td>
+      <td>182.77</td>
+      <td>2778172.26</td>
+      <td>3000050.57</td>
+      <td>-221878.32</td>
+      <td>-7.40</td>
+      <td>60</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>6500.28</td>
+      <td>946.24</td>
+      <td>189.25</td>
+      <td>2876569.06</td>
+      <td>3250139.08</td>
+      <td>-373570.02</td>
+      <td>-11.49</td>
+      <td>65</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>7000.46</td>
+      <td>985.69</td>
+      <td>197.14</td>
+      <td>2996490.16</td>
+      <td>3500227.58</td>
+      <td>-503737.42</td>
+      <td>-14.39</td>
+      <td>70</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>7500.13</td>
+      <td>1021.60</td>
+      <td>204.32</td>
+      <td>3105649.12</td>
+      <td>3750063.22</td>
+      <td>-644414.10</td>
+      <td>-17.18</td>
+      <td>75</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>8000.30</td>
+      <td>1051.43</td>
+      <td>210.29</td>
+      <td>3196358.67</td>
+      <td>4000151.72</td>
+      <td>-803793.05</td>
+      <td>-20.09</td>
+      <td>80</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>8500.48</td>
+      <td>1074.19</td>
+      <td>214.84</td>
+      <td>3265543.92</td>
+      <td>4250240.23</td>
+      <td>-984696.30</td>
+      <td>-23.17</td>
+      <td>85</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>9000.15</td>
+      <td>1098.97</td>
+      <td>219.79</td>
+      <td>3340878.98</td>
+      <td>4500075.86</td>
+      <td>-1159196.88</td>
+      <td>-25.76</td>
+      <td>90</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>9500.33</td>
+      <td>1120.72</td>
+      <td>224.14</td>
+      <td>3406989.33</td>
+      <td>4750164.37</td>
+      <td>-1343175.04</td>
+      <td>-28.28</td>
+      <td>95</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>10000.00</td>
+      <td>1134.88</td>
+      <td>226.98</td>
+      <td>3450037.93</td>
+      <td>5000000.00</td>
+      <td>-1549962.07</td>
+      <td>-31.00</td>
+      <td>100</td>
+      <td>Gradient boosting</td>
+    </tr>
+    <tr>
+      <td>500.18</td>
+      <td>99.63</td>
+      <td>19.93</td>
+      <td>302877.66</td>
+      <td>250088.50</td>
+      <td>52789.16</td>
+      <td>21.11</td>
+      <td>5</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>1000.35</td>
+      <td>176.50</td>
+      <td>35.30</td>
+      <td>536570.07</td>
+      <td>500177.01</td>
+      <td>36393.06</td>
+      <td>7.28</td>
+      <td>10</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>1500.03</td>
+      <td>240.23</td>
+      <td>48.05</td>
+      <td>730288.78</td>
+      <td>750012.64</td>
+      <td>-19723.87</td>
+      <td>-2.63</td>
+      <td>15</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>2000.20</td>
+      <td>311.54</td>
+      <td>62.31</td>
+      <td>947069.24</td>
+      <td>1000101.15</td>
+      <td>-53031.91</td>
+      <td>-5.30</td>
+      <td>20</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>2500.38</td>
+      <td>377.28</td>
+      <td>75.46</td>
+      <td>1146937.74</td>
+      <td>1250189.65</td>
+      <td>-103251.91</td>
+      <td>-8.26</td>
+      <td>25</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>3000.05</td>
+      <td>442.52</td>
+      <td>88.50</td>
+      <td>1345268.80</td>
+      <td>1500025.29</td>
+      <td>-154756.49</td>
+      <td>-10.32</td>
+      <td>30</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>3500.23</td>
+      <td>499.67</td>
+      <td>99.93</td>
+      <td>1519000.66</td>
+      <td>1750113.79</td>
+      <td>-231113.13</td>
+      <td>-13.21</td>
+      <td>35</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>4000.40</td>
+      <td>554.29</td>
+      <td>110.86</td>
+      <td>1685045.26</td>
+      <td>2000202.30</td>
+      <td>-315157.03</td>
+      <td>-15.76</td>
+      <td>40</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>4500.08</td>
+      <td>606.89</td>
+      <td>121.38</td>
+      <td>1844940.07</td>
+      <td>2250037.93</td>
+      <td>-405097.86</td>
+      <td>-18.00</td>
+      <td>45</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>5000.25</td>
+      <td>666.06</td>
+      <td>133.21</td>
+      <td>2024821.73</td>
+      <td>2500126.44</td>
+      <td>-475304.71</td>
+      <td>-19.01</td>
+      <td>50</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>5500.43</td>
+      <td>721.69</td>
+      <td>144.34</td>
+      <td>2193941.23</td>
+      <td>2750214.94</td>
+      <td>-556273.71</td>
+      <td>-20.23</td>
+      <td>55</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>6000.10</td>
+      <td>776.82</td>
+      <td>155.36</td>
+      <td>2361523.29</td>
+      <td>3000050.57</td>
+      <td>-638527.28</td>
+      <td>-21.28</td>
+      <td>60</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>6500.28</td>
+      <td>825.87</td>
+      <td>165.17</td>
+      <td>2510655.94</td>
+      <td>3250139.08</td>
+      <td>-739483.13</td>
+      <td>-22.75</td>
+      <td>65</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>7000.46</td>
+      <td>877.46</td>
+      <td>175.49</td>
+      <td>2667475.85</td>
+      <td>3500227.58</td>
+      <td>-832751.73</td>
+      <td>-23.79</td>
+      <td>70</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>7500.13</td>
+      <td>919.94</td>
+      <td>183.99</td>
+      <td>2796621.66</td>
+      <td>3750063.22</td>
+      <td>-953441.56</td>
+      <td>-25.42</td>
+      <td>75</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>8000.30</td>
+      <td>963.43</td>
+      <td>192.69</td>
+      <td>2928842.36</td>
+      <td>4000151.72</td>
+      <td>-1071309.36</td>
+      <td>-26.78</td>
+      <td>80</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>8500.48</td>
+      <td>1017.04</td>
+      <td>203.41</td>
+      <td>3091812.07</td>
+      <td>4250240.23</td>
+      <td>-1158428.16</td>
+      <td>-27.26</td>
+      <td>85</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>9000.15</td>
+      <td>1056.49</td>
+      <td>211.30</td>
+      <td>3211733.17</td>
+      <td>4500075.86</td>
+      <td>-1288342.69</td>
+      <td>-28.63</td>
+      <td>90</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>9500.33</td>
+      <td>1098.97</td>
+      <td>219.79</td>
+      <td>3340878.98</td>
+      <td>4750164.37</td>
+      <td>-1409285.39</td>
+      <td>-29.67</td>
+      <td>95</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>10000.00</td>
+      <td>1134.88</td>
+      <td>226.98</td>
+      <td>3450037.93</td>
+      <td>5000000.00</td>
+      <td>-1549962.07</td>
+      <td>-31.00</td>
+      <td>100</td>
+      <td>LACE index</td>
+    </tr>
+    <tr>
+      <td>500.18</td>
+      <td>54.62</td>
+      <td>10.92</td>
+      <td>166044.61</td>
+      <td>250088.50</td>
+      <td>-84043.90</td>
+      <td>-33.61</td>
+      <td>5</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>1000.35</td>
+      <td>113.29</td>
+      <td>22.66</td>
+      <td>344388.81</td>
+      <td>500177.01</td>
+      <td>-155788.20</td>
+      <td>-31.15</td>
+      <td>10</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>1500.03</td>
+      <td>173.47</td>
+      <td>34.69</td>
+      <td>527345.37</td>
+      <td>750012.64</td>
+      <td>-222667.27</td>
+      <td>-29.69</td>
+      <td>15</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>2000.20</td>
+      <td>228.59</td>
+      <td>45.72</td>
+      <td>694927.43</td>
+      <td>1000101.15</td>
+      <td>-305173.72</td>
+      <td>-30.51</td>
+      <td>20</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>2500.38</td>
+      <td>283.72</td>
+      <td>56.74</td>
+      <td>862509.48</td>
+      <td>1250189.65</td>
+      <td>-387680.17</td>
+      <td>-31.01</td>
+      <td>25</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>3000.05</td>
+      <td>338.34</td>
+      <td>67.67</td>
+      <td>1028554.09</td>
+      <td>1500025.29</td>
+      <td>-471471.20</td>
+      <td>-31.43</td>
+      <td>30</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>3500.23</td>
+      <td>397.51</td>
+      <td>79.50</td>
+      <td>1208435.75</td>
+      <td>1750113.79</td>
+      <td>-541678.05</td>
+      <td>-30.95</td>
+      <td>35</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>4000.40</td>
+      <td>452.64</td>
+      <td>90.53</td>
+      <td>1376017.80</td>
+      <td>2000202.30</td>
+      <td>-624184.49</td>
+      <td>-31.21</td>
+      <td>40</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>4500.08</td>
+      <td>505.23</td>
+      <td>101.05</td>
+      <td>1535912.61</td>
+      <td>2250037.93</td>
+      <td>-714125.32</td>
+      <td>-31.74</td>
+      <td>45</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>5000.25</td>
+      <td>568.45</td>
+      <td>113.69</td>
+      <td>1728093.87</td>
+      <td>2500126.44</td>
+      <td>-772032.57</td>
+      <td>-30.88</td>
+      <td>50</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>5500.43</td>
+      <td>627.62</td>
+      <td>125.52</td>
+      <td>1907975.52</td>
+      <td>2750214.94</td>
+      <td>-842239.42</td>
+      <td>-30.62</td>
+      <td>55</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>6000.10</td>
+      <td>685.28</td>
+      <td>137.06</td>
+      <td>2083244.83</td>
+      <td>3000050.57</td>
+      <td>-916805.75</td>
+      <td>-30.56</td>
+      <td>60</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>6500.28</td>
+      <td>752.04</td>
+      <td>150.41</td>
+      <td>2286188.24</td>
+      <td>3250139.08</td>
+      <td>-963950.84</td>
+      <td>-29.66</td>
+      <td>65</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>7000.46</td>
+      <td>797.55</td>
+      <td>159.51</td>
+      <td>2424558.74</td>
+      <td>3500227.58</td>
+      <td>-1075668.84</td>
+      <td>-30.73</td>
+      <td>70</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>7500.13</td>
+      <td>857.23</td>
+      <td>171.45</td>
+      <td>2605977.85</td>
+      <td>3750063.22</td>
+      <td>-1144085.37</td>
+      <td>-30.51</td>
+      <td>75</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>8000.30</td>
+      <td>911.85</td>
+      <td>182.37</td>
+      <td>2772022.45</td>
+      <td>4000151.72</td>
+      <td>-1228129.27</td>
+      <td>-30.70</td>
+      <td>80</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>8500.48</td>
+      <td>966.98</td>
+      <td>193.40</td>
+      <td>2939604.51</td>
+      <td>4250240.23</td>
+      <td>-1310635.72</td>
+      <td>-30.84</td>
+      <td>85</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>9000.15</td>
+      <td>1018.05</td>
+      <td>203.61</td>
+      <td>3094886.97</td>
+      <td>4500075.86</td>
+      <td>-1405188.89</td>
+      <td>-31.23</td>
+      <td>90</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>9500.33</td>
+      <td>1075.71</td>
+      <td>215.14</td>
+      <td>3270156.27</td>
+      <td>4750164.37</td>
+      <td>-1480008.09</td>
+      <td>-31.16</td>
+      <td>95</td>
+      <td>No targeting (random)</td>
+    </tr>
+    <tr>
+      <td>10000.00</td>
+      <td>1134.88</td>
+      <td>226.98</td>
+      <td>3450037.93</td>
+      <td>5000000.00</td>
+      <td>-1549962.07</td>
+      <td>-31.00</td>
+      <td>100</td>
+      <td>No targeting (random)</td>
+    </tr>
+  </tbody>
+</table></details></section><section class='card'><div style="height:420px; width:100%;">                            <div id="0faf01d3-97bc-48d8-804f-f260db2f49b3" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("0faf01d3-97bc-48d8-804f-f260db2f49b3")) {                    Plotly.newPlot(                        "0faf01d3-97bc-48d8-804f-f260db2f49b3",                        [{"customdata":{"dtype":"f8","bdata":"AAAAAADIrEBI4XoUrudEQAAAAAAA68xAAAAAAABgREAAAAAAAMB4QClcj8L1SEhAAAAAAAAwdECuR+F6FC5CQAAAAAAA0HxASOF6FK7HO0AAAAAAgPLEQBSuR+F6lEVAAAAAAACswUBSuB6F6\u002fFCQAAAAAAAj75Aw\u002fUoXI\u002fiREAAAAAAABjBQHE9Ctej0EJAAAAAAAD8qEAzMzMzM9NHQA==","shape":"10, 2"},"hovertemplate":"%{y}\u003cbr\u003eAUC %{x:.3f}\u003cbr\u003en = %{customdata[0]:,}\u003cbr\u003ecatches %{customdata[1]}%\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#2a78d6","line":{"color":"#fcfcfb","width":2},"size":11},"mode":"markers","x":{"dtype":"f8","bdata":"cM6I0t7g5T+WQ4ts5\u002fvlP1Z9rrZif+k\u002fMlUwKqkT5j\u002fwp8ZLN4nlP8BbIEHxY+Y\u002fnYAmwoan5T+gibDh6ZXmPyqpE9BE2OQ\u002fQKTfvg6c5z8="},"y":["Race: African American","Race: Caucasian","Race: Hispanic","Race: Other","Race: Unknown","Gender: Female","Gender: Male","Age: 50-69","Age: 70+","Age: Under 50"],"type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05}}},"title":{"font":{"size":15,"color":"#0b0b0b"},"text":"Model AUC within each group (fairness check)","x":0},"margin":{"l":60,"r":20,"t":60,"b":50},"font":{"family":"system-ui, -apple-system, Segoe UI, sans-serif","color":"#52514e","size":12},"xaxis":{"title":{"text":"AUC"},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"yaxis":{"title":{"text":""},"gridcolor":"#e1e0d9","linecolor":"#c3c2b7","zeroline":false},"legend":{"orientation":"h","y":-0.2},"hoverlabel":{"bgcolor":"white"},"paper_bgcolor":"#fcfcfb","plot_bgcolor":"#fcfcfb","height":420},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div><details><summary>Show data table</summary><table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>attribute</th>
+      <th>group</th>
+      <th>stays</th>
+      <th>actual_rate_pct</th>
+      <th>flagged_pct</th>
+      <th>recall_pct</th>
+      <th>precision_pct</th>
+      <th>auc</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>race</td>
+      <td>AfricanAmerican</td>
+      <td>3684</td>
+      <td>10.78</td>
+      <td>21.25</td>
+      <td>41.81</td>
+      <td>21.20</td>
+      <td>0.6837</td>
+    </tr>
+    <tr>
+      <td>race</td>
+      <td>Caucasian</td>
+      <td>14806</td>
+      <td>11.72</td>
+      <td>20.02</td>
+      <td>40.75</td>
+      <td>23.85</td>
+      <td>0.6870</td>
+    </tr>
+    <tr>
+      <td>race</td>
+      <td>Hispanic</td>
+      <td>396</td>
+      <td>8.84</td>
+      <td>18.43</td>
+      <td>48.57</td>
+      <td>23.29</td>
+      <td>0.7968</td>
+    </tr>
+    <tr>
+      <td>race</td>
+      <td>Other</td>
+      <td>323</td>
+      <td>10.22</td>
+      <td>17.65</td>
+      <td>36.36</td>
+      <td>21.05</td>
+      <td>0.6899</td>
+    </tr>
+    <tr>
+      <td>race</td>
+      <td>Unknown</td>
+      <td>461</td>
+      <td>7.81</td>
+      <td>13.23</td>
+      <td>27.78</td>
+      <td>16.39</td>
+      <td>0.6730</td>
+    </tr>
+    <tr>
+      <td>gender</td>
+      <td>Female</td>
+      <td>10725</td>
+      <td>11.45</td>
+      <td>20.92</td>
+      <td>43.16</td>
+      <td>23.62</td>
+      <td>0.6997</td>
+    </tr>
+    <tr>
+      <td>gender</td>
+      <td>Male</td>
+      <td>9048</td>
+      <td>11.23</td>
+      <td>18.91</td>
+      <td>37.89</td>
+      <td>22.50</td>
+      <td>0.6767</td>
+    </tr>
+    <tr>
+      <td>age_band</td>
+      <td>50-69</td>
+      <td>7823</td>
+      <td>11.26</td>
+      <td>18.19</td>
+      <td>41.77</td>
+      <td>25.86</td>
+      <td>0.7058</td>
+    </tr>
+    <tr>
+      <td>age_band</td>
+      <td>70+</td>
+      <td>8752</td>
+      <td>11.69</td>
+      <td>22.43</td>
+      <td>37.63</td>
+      <td>19.61</td>
+      <td>0.6514</td>
+    </tr>
+    <tr>
+      <td>age_band</td>
+      <td>Under 50</td>
+      <td>3198</td>
+      <td>10.63</td>
+      <td>17.79</td>
+      <td>47.65</td>
+      <td>28.47</td>
+      <td>0.7378</td>
+    </tr>
+  </tbody>
+</table></details></section></div>
+<footer>Data: UCI Diabetes 130-US Hospitals (Strack et al., 2014). Cost assumptions: AHRQ HCUP readmission cost;
+effect size from the Care Transitions Intervention (Coleman 2006) and Project RED (Jack 2009) trials.</footer>
+</main></body></html>

@@ -1,0 +1,11 @@
+attribute,group,stays,actual_rate_pct,flagged_pct,recall_pct,precision_pct,auc
+race,AfricanAmerican,3684,10.78,21.25,41.81,21.2,0.6837
+race,Caucasian,14806,11.72,20.02,40.75,23.85,0.687
+race,Hispanic,396,8.84,18.43,48.57,23.29,0.7968
+race,Other,323,10.22,17.65,36.36,21.05,0.6899
+race,Unknown,461,7.81,13.23,27.78,16.39,0.673
+gender,Female,10725,11.45,20.92,43.16,23.62,0.6997
+gender,Male,9048,11.23,18.91,37.89,22.5,0.6767
+age_band,50-69,7823,11.26,18.19,41.77,25.86,0.7058
+age_band,70+,8752,11.69,22.43,37.63,19.61,0.6514
+age_band,Under 50,3198,10.63,17.79,47.65,28.47,0.7378

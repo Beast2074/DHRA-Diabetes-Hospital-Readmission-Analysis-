@@ -1,0 +1,4 @@
+patient_type,patients,pct_of_patients,encounters,pct_of_encounters,readmissions,pct_of_readmissions
+1 stay,53646,76.65,53646,54.0,2287,20.21
+2 stays,10218,14.6,20436,20.57,3108,27.47
+3+ stays,6123,8.75,25258,25.43,5919,52.32

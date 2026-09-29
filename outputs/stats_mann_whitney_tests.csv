@@ -1,0 +1,7 @@
+variable,mean_readmitted,mean_not_readmitted,p_value,rank_biserial
+time_in_hospital,4.79,4.22,3.9678188157338947e-56,0.1194
+num_medications,16.62,15.57,2.573663245968874e-29,0.0857
+number_diagnoses,7.51,7.2,2.9410460096507187e-30,0.0832
+num_lab_procedures,44.91,42.68,1.0351540695738903e-17,0.0654
+number_emergency,0.15,0.1,1.3033910809289936e-15,0.0275
+number_inpatient,0.37,0.16,7.567421320069824e-111,0.0953

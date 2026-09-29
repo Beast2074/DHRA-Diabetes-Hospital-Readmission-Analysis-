@@ -1,0 +1,7 @@
+strategy,targeted,readmissions_reached,readmissions_prevented,gross_savings,program_cost,net_savings,roi_pct
+Gradient boosting - top 20%,2000.2,462.8,92.6,1406766.8,1000101.1,406665.7,40.7
+LACE index - top 20%,2000.2,311.5,62.3,947069.2,1000101.1,-53031.9,-5.3
+No targeting (random) - top 20%,2000.2,228.6,45.7,694927.4,1000101.1,-305173.7,-30.5
+LACE >= 10 rule (11% of stays),1056.5,181.1,36.2,550407.1,528245.6,22161.5,4.2
+Gradient boosting - optimal top 15%,1500.0,382.3,76.5,1162312.2,750012.6,412299.6,55.0
+Enrol every discharge,10000.0,1134.9,227.0,3450037.9,5000000.0,-1549962.1,-31.0

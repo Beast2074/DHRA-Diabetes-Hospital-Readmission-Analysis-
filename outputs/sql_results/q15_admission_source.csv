@@ -1,0 +1,6 @@
+admission_source,encounters,readmit_rate_pct
+Emergency Room,55848,11.98
+Referral,30433,10.71
+Unknown,6854,10.78
+Transfer,6185,10.07
+Other,20,10.0

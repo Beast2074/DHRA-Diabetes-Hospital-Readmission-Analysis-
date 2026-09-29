@@ -1,0 +1,10 @@
+medical_specialty,encounters,readmit_rate_pct,risk_rank
+Nephrology,1539,16.11,1
+Family/GeneralPractice,7252,12.12,2
+InternalMedicine,14237,11.53,3
+Emergency/Trauma,7419,11.39,4
+Surgery-General,3059,11.18,5
+Orthopedics,1392,10.85,6
+Radiologist,1121,9.1,7
+Cardiology,5278,8.03,8
+Orthopedics-Reconstructive,1230,7.48,9

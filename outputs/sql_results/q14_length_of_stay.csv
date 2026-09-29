@@ -1,0 +1,5 @@
+length_of_stay,encounters,bed_days,readmit_rate_pct
+1. 1-2 days,30713,47604,9.33
+2. 3-4 days,31116,107032,11.33
+3. 5-7 days,22800,132747,12.67
+4. 8-14 days,14711,147663,13.85

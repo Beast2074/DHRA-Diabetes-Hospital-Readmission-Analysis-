@@ -1,0 +1,8 @@
+drug_class,encounters_on_class,pct_of_encounters,readmit_rate_pct
+Insulin,52964,53.32,12.42
+Sulfonylurea,27943,28.13,11.0
+Biguanide,19843,19.97,9.77
+Thiazolidinedione,13514,13.6,10.6
+Meglitinide,2198,2.21,12.83
+Combination,712,0.72,11.1
+Alpha-glucosidase inhibitor,342,0.34,9.36
